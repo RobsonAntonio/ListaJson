@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from './src/service/api';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from 'react-native';
+
+
 import Cadastros from './src/Cadastros';
+const initialState = {
+  name: '',
+  gender: '',
+  email: '',
+  status: '',
+}
 function App() {
   const [usuarios, setUsuarios] = useState([])
-  const [user, setUser] = useState({
-    name: '',
-    gender: '',
-    email: '',
-    status: '',
-  });
+
+
+  const [user, setUser] = useState(initialState);
 
   const onChangeName = (value) => {
     setUser({ ...user, name: value });
@@ -27,45 +32,41 @@ function App() {
     setUser({ ...user, status: value });
   }
 
-  useEffect(() => {
-    async function dados() {
-      const response = await api.get('public/v2/users/')
-      console.log(response.data)
-      setUsuarios(response.data)
-
+  const getUser = async () => {
+    try {
+      let response = await api.get('public-api/users?page=1');
+      setUsuarios(response.data.data)
+      console.log(response.data.data)
+    } catch (error) {
+      console.log(error)
     }
+  };
 
-    dados()
+
+  useEffect(() => {
+    getUser()
 
   }, []);
 
-  const salvarCadastro = () => {
-    var myHeader = new Headers();
-    myHeader.append(
-      'Authorization', 'Bearer c9e04ab0405c46aef5453243d4e1080f35f7ea90be2b71ba98f34a4c93be9a46'
-    );
-    myHeader.append('Content-Type', 'application/json')
-    fetch('https://gorest.co.in/public-api/users', {
-      method: 'POST',
-      headers: myHeader,
-      body: JSON.stringify({
+
+  const salvarCadastro = async () => {
+    try {
+      await api.post('public-api/users', {
         name: user.name,
         gender: user.gender,
         email: user.email,
         status: user.status
-      })
-    })
-      .then((response) => {
-        response.text()
-      })
 
-      .then((result) => console.log(result))
-      .catch((error) => console.log(error))
+      })
+      alert('Salvo com Sucesso!')
+      setUser(initialState)
+      getUser()
 
-    alert('Salvo com Sucesso!')
+    } catch (error) {
+      console.log(error)
+    }
 
   }
-
 
   return (
     <View style={styles.container}>
@@ -74,20 +75,24 @@ function App() {
         <Text style={styles.text} >Nome</Text>
         <TextInput
           style={styles.input}
+          value={user.name}
           onChangeText={(value) => onChangeName(value)}
         />
         <Text style={styles.text} >Gênero</Text>
         <TextInput
+          value={user.gender}
           style={styles.input}
           onChangeText={(value) => onChangeGender(value)}
         />
         <Text style={styles.text} >E-mail</Text>
         <TextInput
+          value={user.email}
           style={styles.input}
           onChangeText={(value) => onChangeEmail(value)}
         />
         <Text style={styles.text} >Status</Text>
         <TextInput
+          value={user.status}
           style={styles.input}
           onChangeText={(value) => onChangeStatus(value)}
         />
@@ -102,7 +107,7 @@ function App() {
 
       <FlatList
         data={usuarios}
-        keyExtractor={item => String(item.id)}
+        keyExtractor={item => item.id}
         renderItem={({ item }) => <Cadastros data={item} />}
       />
     </View>
